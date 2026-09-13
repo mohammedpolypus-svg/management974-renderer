@@ -30,7 +30,7 @@ const C = {
   onDarkSub: '#9A9C9F',
 };
 
-const FONT_DIR = path.join(__dirname, 'fonts');
+const FONT_DIR = __dirname;
 const F = {
   head: 'PlexCondBold',
   body: 'PlexSans',
@@ -196,20 +196,40 @@ function drawSlide(doc, slide, meta, pageNum, total) {
     y += 8;
     doc.rect(LX, y, CW, 1).fill(meta2.rule);
     y += 20;
-    const listH = measureRows(doc, slide.list_items, CW - 44, F.body, 12.5, 18);
     y = drawRegisterList(doc, slide.list_items, LX, y, CW, 12.5, 18, meta2.rule);
-    const imgTop = y + 12;
-    const imgBottom = FOOTER_TOP - 24;
-    const imgH = Math.max(imgBottom - imgTop, 60);
-    safeImage(doc, slide.image_base64, LX, imgTop, CW, imgH);
+    const areaTop = y + 12;
+    const areaBottom = FOOTER_TOP - 24;
+    const areaH = Math.max(areaBottom - areaTop, 60);
+    if (slide.stat_value) {
+      // Side-by-side: a sourced stat callout beside the image, not floating text.
+      const statW = Math.round(CW * 0.32);
+      const gap = 16;
+      const imgW = CW - statW - gap;
+      doc.rect(LX, areaTop, statW, areaH).lineWidth(1).strokeColor(C.hairline).stroke();
+      doc.fillColor(meta2.rule).font(F.head).fontSize(36).text(slide.stat_value, LX + 16, areaTop + 24, { width: statW - 32 });
+      let sy = doc.y + 8;
+      if (slide.stat_label) {
+        doc.fillColor(C.ink).font(F.body).fontSize(10.5).text(slide.stat_label, LX + 16, sy, { width: statW - 32, lineGap: 2 });
+      }
+      if (slide.stat_source) {
+        doc.fillColor(C.graphite).font(F.italic).fontSize(8).text(slide.stat_source, LX + 16, areaTop + areaH - 26, { width: statW - 32 });
+      }
+      safeImage(doc, slide.image_base64, LX + statW + gap, areaTop, imgW, areaH);
+    } else {
+      safeImage(doc, slide.image_base64, LX, areaTop, CW, areaH);
+    }
   } else if (slide.type === 'cta') {
     let y = headline(doc, slide.headline, LX, 170, CW - 40, true, 32);
-    y = bodyText(doc, slide.body, LX, y + 4, CW - 60, true) + 24;
-    if (slide.link_text) {
-      doc.rect(LX, y, CW - 60, 1).fill('#F1F0EC');
-      y += 16;
-      doc.fillColor('#F1F0EC').font(F.bodyBold).fontSize(13.5).text(slide.link_text, LX, y, { width: CW - 60, lineGap: 3 });
-      y = doc.y + 20;
+    y = bodyText(doc, slide.body, LX, y + 4, CW - 60, true) + 16;
+    if (Array.isArray(slide.takeaway_points) && slide.takeaway_points.length) {
+      doc.font(F.body).fontSize(12.5);
+      slide.takeaway_points.forEach(pt => {
+        const rowH = doc.heightOfString(pt, { width: CW - 76, lineGap: 3 });
+        doc.fillColor('#F1F0EC').text('—', LX, y);
+        doc.fillColor('#D8D6D0').font(F.body).fontSize(12.5).text(pt, LX + 16, y, { width: CW - 76, lineGap: 3 });
+        y += Math.max(rowH, 16) + 10;
+      });
+      y += 10;
     }
     const imgTop = y;
     const imgBottom = FOOTER_TOP - 24;
@@ -236,8 +256,9 @@ app.post('/render', (req, res) => {
     return res.status(422).json({ detail: { validation_errors: errors } });
   }
 
+  let doc;
   try {
-    const doc = new PDFDocument({ size: [PAGE.width, PAGE.height], margin: 0 });
+    doc = new PDFDocument({ size: [PAGE.width, PAGE.height], margin: 0 });
     registerFonts(doc);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${spec.title.replace(/[^a-z0-9]+/gi, '_')}.pdf"`);
@@ -253,9 +274,24 @@ app.post('/render', (req, res) => {
     });
     doc.end();
   } catch (e) {
-    res.status(500).json({ detail: `Render failed: ${e.message}` });
+    // Log the real cause — this is what actually tells us what broke.
+    console.error('Render error:', e && e.stack || e);
+    // Stop the half-built PDF stream from writing into a response we're
+    // about to end differently, which previously crashed the whole process
+    // with an unhandled "write after end" error.
+    if (doc) {
+      try { doc.unpipe(res); } catch (_) { /* ignore */ }
+      try { doc.destroy(); } catch (_) { /* ignore */ }
+    }
+    if (!res.headersSent) {
+      res.status(500).json({ detail: `Render failed: ${e.message}` });
+    } else if (!res.writableEnded) {
+      res.end();
+    }
   }
 });
+
+process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Management.974 renderer listening on ${port}`));
