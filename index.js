@@ -38,11 +38,24 @@ const F = {
   italic: 'PlexSansItalic',
 };
 
+const fs = require('fs');
+
+// Resilient to either layout: fonts flat at repo root, or inside a fonts/
+// subfolder. Whichever exists at boot is used, so a stray file reorganization
+// doesn't silently break every render with an ENOENT deep in a request.
+function resolveFontPath(filename) {
+  const flat = path.join(FONT_DIR, filename);
+  if (fs.existsSync(flat)) return flat;
+  const nested = path.join(FONT_DIR, 'fonts', filename);
+  if (fs.existsSync(nested)) return nested;
+  throw new Error(`Font file not found in either location: ${flat} or ${nested}`);
+}
+
 function registerFonts(doc) {
-  doc.registerFont(F.head, path.join(FONT_DIR, 'PlexSansCondensed-Bold.ttf'));
-  doc.registerFont(F.body, path.join(FONT_DIR, 'PlexSans-Regular.ttf'));
-  doc.registerFont(F.bodyBold, path.join(FONT_DIR, 'PlexSans-Bold.ttf'));
-  doc.registerFont(F.italic, path.join(FONT_DIR, 'PlexSans-Italic.ttf'));
+  doc.registerFont(F.head, resolveFontPath('PlexSansCondensed-Bold.ttf'));
+  doc.registerFont(F.body, resolveFontPath('PlexSans-Regular.ttf'));
+  doc.registerFont(F.bodyBold, resolveFontPath('PlexSans-Bold.ttf'));
+  doc.registerFont(F.italic, resolveFontPath('PlexSans-Italic.ttf'));
 }
 
 const DEFAULT_AUTHOR = 'MANAGEMENT.974';
