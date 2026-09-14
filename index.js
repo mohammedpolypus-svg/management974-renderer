@@ -107,10 +107,10 @@ function background(doc, dark) { doc.rect(0, 0, PAGE.width, PAGE.height).fill(da
 function header(doc, pageNum, total, dark, author, authorTitle) {
   const fg = dark ? '#F1F0EC' : C.ink;
   const sub = dark ? C.onDarkSub : C.graphite;
-  doc.fillColor(fg).font(F.bodyBold).fontSize(14).text(author, LX, 40);
-  doc.fillColor(sub).font(F.body).fontSize(11).text(authorTitle, LX, 58);
+  doc.fillColor(fg).font(F.bodyBold).fontSize(21).text(author, LX, 40);
+  doc.fillColor(sub).font(F.body).fontSize(11).text(authorTitle, LX, doc.y + 2);
   doc.fillColor(sub).font(F.body).fontSize(11).text(`Brief ${pageNum} of ${total}`, PAGE.width - 166, 42, { width: 110, align: 'right' });
-  doc.moveTo(LX, 84).lineTo(PAGE.width - LX, 84).lineWidth(0.75).strokeColor(dark ? '#333436' : C.hairline).stroke();
+  doc.moveTo(LX, 92).lineTo(PAGE.width - LX, 92).lineWidth(0.75).strokeColor(dark ? '#333436' : C.hairline).stroke();
 }
 
 function footer(doc, dark, title) {
@@ -190,10 +190,10 @@ function drawFactBoxes(doc, facts, x, y, w, h, ruleColor) {
   facts.slice(0, 3).forEach((f, i) => {
     const by = y + i * (boxH + gap);
     doc.rect(x, by, w, boxH).lineWidth(1).strokeColor(C.hairline).stroke();
-    doc.fillColor(ruleColor).font(F.head).fontSize(24).text(f.value || '', x + 14, by + 12, { width: w - 28 });
+    doc.fillColor(ruleColor).font(F.head).fontSize(36).text(f.value || '', x + 14, by + 12, { width: w - 28 });
     const labelY = doc.y + 4;
     if (f.label) {
-      doc.fillColor(C.ink).font(F.body).fontSize(9.5).text(f.label, x + 14, labelY, { width: w - 28, lineGap: 1, height: boxH - (labelY - by) - 20 });
+      doc.fillColor(C.ink).font(F.body).fontSize(14).text(f.label, x + 14, labelY, { width: w - 28, lineGap: 1, height: boxH - (labelY - by) - 20 });
     }
     if (f.source) {
       doc.fillColor(C.graphite).font(F.italic).fontSize(7.5).text(f.source, x + 14, by + boxH - 16, { width: w - 28 });
