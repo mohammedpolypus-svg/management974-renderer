@@ -107,36 +107,36 @@ function background(doc, dark) { doc.rect(0, 0, PAGE.width, PAGE.height).fill(da
 function header(doc, pageNum, total, dark, author, authorTitle) {
   const fg = dark ? '#F1F0EC' : C.ink;
   const sub = dark ? C.onDarkSub : C.graphite;
-  doc.fillColor(fg).font(F.bodyBold).fontSize(12).text(author, LX, 40);
-  doc.fillColor(sub).font(F.body).fontSize(9.5).text(authorTitle, LX, 57);
-  doc.fillColor(sub).font(F.body).fontSize(9.5).text(`Brief ${pageNum} of ${total}`, PAGE.width - 156, 40, { width: 100, align: 'right' });
-  doc.moveTo(LX, 82).lineTo(PAGE.width - LX, 82).lineWidth(0.75).strokeColor(dark ? '#333436' : C.hairline).stroke();
+  doc.fillColor(fg).font(F.bodyBold).fontSize(14).text(author, LX, 40);
+  doc.fillColor(sub).font(F.body).fontSize(11).text(authorTitle, LX, 58);
+  doc.fillColor(sub).font(F.body).fontSize(11).text(`Brief ${pageNum} of ${total}`, PAGE.width - 166, 42, { width: 110, align: 'right' });
+  doc.moveTo(LX, 84).lineTo(PAGE.width - LX, 84).lineWidth(0.75).strokeColor(dark ? '#333436' : C.hairline).stroke();
 }
 
 function footer(doc, dark, title) {
   const y = FOOTER_TOP;
   doc.moveTo(LX, y).lineTo(PAGE.width - LX, y).lineWidth(0.75).strokeColor(dark ? '#333436' : C.hairline).stroke();
-  doc.fillColor(dark ? C.onDarkSub : C.graphite).font(F.body).fontSize(8.5).text(title, LX, y + 12, { width: CW - 140 });
-  doc.fillColor(dark ? C.onDarkSub : C.graphite).font(F.body).fontSize(8.5).text('management.974', PAGE.width - 176, y + 12, { width: 120, align: 'right' });
+  doc.fillColor(dark ? C.onDarkSub : C.graphite).font(F.body).fontSize(9.5).text(title, LX, y + 13, { width: CW - 150 });
+  doc.fillColor(dark ? C.onDarkSub : C.graphite).font(F.body).fontSize(9.5).text('management.974', PAGE.width - 186, y + 13, { width: 130, align: 'right' });
 }
 
 // Left-edge tab marker in place of an ALL-CAPS eyebrow: a small filled rule
 // plus a sentence-case label, like a folder tab on a case file.
 function tabMarker(doc, label, ruleColor, dark) {
-  const y = 108;
+  const y = 110;
   doc.rect(LX, y, 28, 4).fill(ruleColor || (dark ? '#F1F0EC' : C.ink));
-  doc.fillColor(dark ? '#F1F0EC' : C.ink).font(F.bodyBold).fontSize(11).text(label, LX + 38, y - 5);
-  return y + 30;
+  doc.fillColor(dark ? '#F1F0EC' : C.ink).font(F.bodyBold).fontSize(12.5).text(label, LX + 40, y - 6);
+  return y + 32;
 }
 
 function headline(doc, text, x, y, w, dark, size) {
-  doc.fillColor(dark ? '#F1F0EC' : C.ink).font(F.head).fontSize(size || 34);
+  doc.fillColor(dark ? '#F1F0EC' : C.ink).font(F.head).fontSize(size || 36);
   doc.text(text, x, y, { width: w, lineGap: 0 });
   return doc.y + 18;
 }
 
 function bodyText(doc, text, x, y, w, dark, size) {
-  doc.fillColor(dark ? '#D8D6D0' : '#2B2C2E').font(F.body).fontSize(size || 14.5);
+  doc.fillColor(dark ? '#D8D6D0' : '#2B2C2E').font(F.body).fontSize(size || 16);
   doc.text(text, x, y, { width: w, lineGap: 4 });
   return doc.y;
 }
@@ -169,15 +169,36 @@ function measureRows(doc, items, width, font, size, gap) {
 function drawRegisterList(doc, items, x, y, w, size, gap, numColor) {
   doc.font(F.body).fontSize(size);
   items.forEach((t, i) => {
-    const rowH = Math.max(doc.heightOfString(t, { width: w - 44, lineGap: 3 }), size + 4);
-    doc.fillColor(numColor).font(F.head).fontSize(size + 2).text(String(i + 1).padStart(2, '0'), x, y);
-    doc.fillColor(C.ink).font(F.body).fontSize(size).text(t, x + 44, y, { width: w - 44, lineGap: 3 });
+    const rowH = Math.max(doc.heightOfString(t, { width: w - 48, lineGap: 3 }), size + 4);
+    doc.fillColor(numColor).font(F.head).fontSize(size + 3).text(String(i + 1).padStart(2, '0'), x, y);
+    doc.fillColor(C.ink).font(F.body).fontSize(size).text(t, x + 48, y, { width: w - 48, lineGap: 3 });
     y += rowH + gap;
     if (i < items.length - 1) {
       doc.moveTo(x, y - gap / 2).lineTo(x + w, y - gap / 2).lineWidth(0.5).strokeColor(C.hairline).stroke();
     }
   });
   return y;
+}
+
+// Three stacked, sourced fact/stat boxes in a left column, with the image
+// filling the remaining width beside them. Reused on the Reality page and
+// the Warning Signs page — real, cited numbers belong next to the art, not
+// floating loose in the copy.
+function drawFactBoxes(doc, facts, x, y, w, h, ruleColor) {
+  const gap = 12;
+  const boxH = (h - gap * 2) / 3;
+  facts.slice(0, 3).forEach((f, i) => {
+    const by = y + i * (boxH + gap);
+    doc.rect(x, by, w, boxH).lineWidth(1).strokeColor(C.hairline).stroke();
+    doc.fillColor(ruleColor).font(F.head).fontSize(24).text(f.value || '', x + 14, by + 12, { width: w - 28 });
+    const labelY = doc.y + 4;
+    if (f.label) {
+      doc.fillColor(C.ink).font(F.body).fontSize(9.5).text(f.label, x + 14, labelY, { width: w - 28, lineGap: 1, height: boxH - (labelY - by) - 20 });
+    }
+    if (f.source) {
+      doc.fillColor(C.graphite).font(F.italic).fontSize(7.5).text(f.source, x + 14, by + boxH - 16, { width: w - 28 });
+    }
+  });
 }
 
 // ---------- per-type slide drawing ----------
@@ -187,7 +208,7 @@ function drawSlide(doc, slide, meta, pageNum, total) {
   header(doc, pageNum, total, dark, meta.author, meta.authorTitle);
 
   if (slide.type === 'hero') {
-    let y = headline(doc, slide.headline, LX, 150, CW, true, 40);
+    let y = headline(doc, slide.headline, LX, 150, CW, true, 44);
     if (slide.body) y = bodyText(doc, slide.body, LX, y + 4, CW - 60, true) + 20;
     const imgTop = y + 10;
     const imgBottom = FOOTER_TOP - 24;
@@ -196,58 +217,72 @@ function drawSlide(doc, slide, meta, pageNum, total) {
   } else if (slide.type === 'reality') {
     const meta2 = SECTION_META.reality;
     let y = tabMarker(doc, meta2.tab, meta2.rule, false);
-    y = headline(doc, slide.headline, LX, y, CW, false, 28);
-    y = bodyText(doc, slide.body, LX, y, CW, false) + 20;
-    const imgTop = y;
-    const imgBottom = FOOTER_TOP - 24;
-    const imgH = Math.max(imgBottom - imgTop, 60);
-    safeImage(doc, slide.image_base64, LX, imgTop, CW, imgH);
+    y = headline(doc, slide.headline, LX, y, CW, false, 30);
+    y = bodyText(doc, slide.body, LX, y, CW, false) + 22;
+    const areaTop = y;
+    const areaBottom = FOOTER_TOP - 24;
+    const areaH = Math.max(areaBottom - areaTop, 60);
+    if (Array.isArray(slide.facts) && slide.facts.length) {
+      // Reduced, deliberately smaller image beside three cited facts —
+      // the numbers carry as much weight on this page as the picture.
+      const factsW = Math.round(CW * 0.36);
+      const gap = 16;
+      const imgW = CW - factsW - gap;
+      drawFactBoxes(doc, slide.facts, LX, areaTop, factsW, areaH, meta2.rule);
+      safeImage(doc, slide.image_base64, LX + factsW + gap, areaTop, imgW, areaH);
+    } else {
+      // No facts supplied: still show a deliberately smaller image, not a
+      // full-bleed one, so this page doesn't visually compete with the hero.
+      const imgH = Math.min(areaH, areaH * 0.62);
+      safeImage(doc, slide.image_base64, LX, areaTop, CW, imgH);
+    }
   } else if (slide.type === 'list') {
     const meta2 = resolveListTab(slide);
     let y = tabMarker(doc, meta2.tab, meta2.rule, false);
-    y = headline(doc, slide.headline, LX, y, CW, false, 26);
+    y = headline(doc, slide.headline, LX, y, CW, false, 28);
     y += 8;
     doc.rect(LX, y, CW, 1).fill(meta2.rule);
     y += 20;
-    y = drawRegisterList(doc, slide.list_items, LX, y, CW, 12.5, 18, meta2.rule);
+    y = drawRegisterList(doc, slide.list_items, LX, y, CW, 14, 18, meta2.rule);
     const areaTop = y + 12;
     const areaBottom = FOOTER_TOP - 24;
     const areaH = Math.max(areaBottom - areaTop, 60);
-    if (slide.stat_value) {
-      // Side-by-side: a sourced stat callout beside the image, not floating text.
-      const statW = Math.round(CW * 0.32);
+    if (Array.isArray(slide.facts) && slide.facts.length) {
+      // Three cited facts stacked on the left, image filling the rest.
+      const factsW = Math.round(CW * 0.34);
       const gap = 16;
-      const imgW = CW - statW - gap;
-      doc.rect(LX, areaTop, statW, areaH).lineWidth(1).strokeColor(C.hairline).stroke();
-      doc.fillColor(meta2.rule).font(F.head).fontSize(36).text(slide.stat_value, LX + 16, areaTop + 24, { width: statW - 32 });
-      let sy = doc.y + 8;
-      if (slide.stat_label) {
-        doc.fillColor(C.ink).font(F.body).fontSize(10.5).text(slide.stat_label, LX + 16, sy, { width: statW - 32, lineGap: 2 });
-      }
-      if (slide.stat_source) {
-        doc.fillColor(C.graphite).font(F.italic).fontSize(8).text(slide.stat_source, LX + 16, areaTop + areaH - 26, { width: statW - 32 });
-      }
-      safeImage(doc, slide.image_base64, LX + statW + gap, areaTop, imgW, areaH);
+      const imgW = CW - factsW - gap;
+      drawFactBoxes(doc, slide.facts, LX, areaTop, factsW, areaH, meta2.rule);
+      safeImage(doc, slide.image_base64, LX + factsW + gap, areaTop, imgW, areaH);
     } else {
       safeImage(doc, slide.image_base64, LX, areaTop, CW, areaH);
     }
   } else if (slide.type === 'cta') {
-    let y = headline(doc, slide.headline, LX, 170, CW - 40, true, 32);
-    y = bodyText(doc, slide.body, LX, y + 4, CW - 60, true) + 16;
+    let y = headline(doc, slide.headline, LX, 165, CW - 40, true, 35);
+    y = bodyText(doc, slide.body, LX, y + 4, CW - 60, true, 16) + 16;
     if (Array.isArray(slide.takeaway_points) && slide.takeaway_points.length) {
-      doc.font(F.body).fontSize(12.5);
+      doc.font(F.body).fontSize(14);
       slide.takeaway_points.forEach(pt => {
-        const rowH = doc.heightOfString(pt, { width: CW - 76, lineGap: 3 });
-        doc.fillColor('#F1F0EC').text('—', LX, y);
-        doc.fillColor('#D8D6D0').font(F.body).fontSize(12.5).text(pt, LX + 16, y, { width: CW - 76, lineGap: 3 });
-        y += Math.max(rowH, 16) + 10;
+        const rowH = doc.heightOfString(pt, { width: CW - 80, lineGap: 3 });
+        doc.fillColor('#F1F0EC').text('\u2013', LX, y);
+        doc.fillColor('#D8D6D0').font(F.body).fontSize(14).text(pt, LX + 18, y, { width: CW - 80, lineGap: 3 });
+        y += Math.max(rowH, 18) + 10;
       });
-      y += 10;
+      y += 8;
     }
+    const hasAdvice = !!slide.advice_text;
+    const adviceH = hasAdvice ? 96 : 0;
+    const adviceGap = hasAdvice ? 16 : 0;
     const imgTop = y;
-    const imgBottom = FOOTER_TOP - 24;
+    const imgBottom = FOOTER_TOP - 24 - adviceH - adviceGap;
     const imgH = Math.max(imgBottom - imgTop, 60);
     safeImage(doc, slide.image_base64, LX, imgTop, CW, imgH);
+    if (hasAdvice) {
+      const boxY = imgTop + imgH + adviceGap;
+      doc.rect(LX, boxY, CW, adviceH).lineWidth(1).strokeColor('#3A3B3D').stroke();
+      doc.fillColor('#8FBF9F').font(F.bodyBold).fontSize(10.5).text((slide.advice_label || 'Try this today').toUpperCase(), LX + 18, boxY + 14, { width: CW - 36 });
+      doc.fillColor('#F1F0EC').font(F.body).fontSize(13).text(slide.advice_text, LX + 18, boxY + 34, { width: CW - 36, lineGap: 2 });
+    }
   } else {
     doc.fillColor(dark ? '#F1F0EC' : C.ink).font(F.head).fontSize(22).text(slide.headline || '(untitled)', LX, 160, { width: CW });
   }
